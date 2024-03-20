@@ -21,9 +21,9 @@ export default function App() {
       >
         <Stack.Screen
         name='Home'
-        component={Home}
+        component={Umbrella}
         options={{
-          title: 'Home'
+          title: 'Umbrella?'
         }}
         />
 
