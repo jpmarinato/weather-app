@@ -13,7 +13,7 @@ import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { fetchWeatherData } from "../api/weather";
 
 // Flatlist used here
-export default function Forecast({ navigation, route }) {
+export default function Details({ navigation, route }) {
     const {cityId} = route.params;
     // console.log('id:' + cityId);
 

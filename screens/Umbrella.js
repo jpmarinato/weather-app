@@ -123,7 +123,7 @@ export default function Umbrella({ navigation }) {
                         color="#000"
                         title='details'
                         onPress={()=> navigation.navigate(
-                            'Forecast',
+                            'Details',
                             {
                                 cityId: data.id
                             }

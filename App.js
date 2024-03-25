@@ -8,7 +8,7 @@ import { createNativeStackNavigator } from '@react-navigation/native-stack';
 
 
 import Umbrella from './screens/Umbrella';
-import Forecast from './screens/Forecast';
+import Details from './screens/Details';
 
 const Stack = createNativeStackNavigator();
 
@@ -27,8 +27,8 @@ export default function App() {
         />
 
         <Stack.Screen
-        name='Forecast'
-        component={Forecast}
+        name='Details'
+        component={Details}
         options={{
           title: 'Details'
         }}
