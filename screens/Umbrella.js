@@ -7,185 +7,144 @@
 // For now I have on screen for when it is Raining (Umbrella.js) and one for when it is Not Raining (NoRain.js)
 
 import React, { useEffect, useState } from 'react';
-import { StyleSheet, View, Text, Image, FlatList, Button } from 'react-native';
-import { weatherConditions } from '../utils/WeatherConditions';
+import { StyleSheet, View, Text, Image, FlatList, Button, ActivityIndicator } from 'react-native';
+import getWeatherConditions from '../utils/WeatherConditions';
 import * as Location from 'expo-location';
 
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 
 import { fetchWeatherData } from "../api/weather";
-// import { Details } from '../src/Details';
 
-// Current weather data to be replaced by API data
-// const DATA = [
-//     {id: '001', day: 'monday', temp: '18°C', percent: '60%'}, {id: '002', day: 'tuesday', temp: '23°C', percent: '10%'}, {id: '003', day: 'wednesday', temp: '25°C', percent: '30%'}, 
-// ];
-
-// const Item = ({ day, temp, percent }) => (
-//     <View style={styles.infoContainer}>
-//         <Text style={styles.text}>{day}</Text>
-//         <Text style={styles.text}>{temp}</Text>
-//         <Text style={styles.text}>{percent}</Text>
-//     </View>
-// );
-
-// const renderItem = ({ item }) => (
-//     <Item 
-//         day={item.day} 
-//         temp={item.temp}
-//         percent={item.percent}  
-//     />
-// );
-
-// I wasn't able to use the Flatlist for this screen but it is on the Forecast screen
 export default function Umbrella({ navigation }) {
     //----------------Location Check----------------
+    const [error, setError] = useState(null);
+    const [data, setData] = useState(null);
+    const [loading, setLoading] = useState(true);
+
     const [location, setLocation] = useState(null);
-    const [errorMsg, setErrorMsg] = useState(null);
-    const [latitude, setLatitude] = useState(null);
-    const [longitude, setLongitude] = useState(null);
+    const [latitude, setLatitude] = useState(48.4833);
+    const [longitude, setLongitude] = useState(124.4833);
+  
     
+
     useEffect(() => {
-      (async () => {
-        
-        let { status } = await Location.requestForegroundPermissionsAsync();
-        if (status !== 'granted') {
-          setErrorMsg('Permission to access location was denied');
-          return;
-        }
-  
-        let location = await Location.getCurrentPositionAsync({});
-        setLatitude(location.coords.latitude)
-        setLongitude(location.coords.longitude);
-        setLocation(location.coords);
-      })();
+        const apiKey = "00703541609ed86c9d76331553ebdb40";
+        const fetchUri = `https://api.openweathermap.org/data/2.5/weather?lat=${latitude}&lon=${longitude}&appid=${apiKey}`;
+
+        fetch(fetchUri)
+            .then(
+                res => res.json() 
+            )
+            .then(
+                (res) => {
+                    // console.log("success");
+                    // console.log(res);
+                    setData(res);
+                    setLoading(false);
+                },
+
+                (err) => {
+                    // console.log("error");
+                    setError(err);
+                    setLoading(false);
+                }
+            )
     }, []);
-  
-    let text = 'Waiting..';
-    if (errorMsg) {
-      text = errorMsg;
-    } else if (location) {
-      text = JSON.stringify(location);
-    }
-    console.warn("latitude: ", latitude);
-    console.warn("longitude: ", longitude);
-    // return (
-    //   <View style={styles.container}>
-    //     <Text style={styles.paragraph}>{latitude}</Text>
-    //     <Text style={styles.paragraph}>{longitude}</Text>
-    //   </View>
-    // );
-
-    //----------------Weather API Call----------------
-    
-    const SearchScreen = ({ navigation }) => {
-        const [city, setCity] = useState("");
-        const [weatherData, setWeatherData] = useState(null);
-       
-        const handleSearch = async () => {
-          try {
-            const data = await fetchWeatherData(latitude, longitude);
-            setWeatherData(data);
-          } catch (error) {
-            // Handle the error
-          }
-        };
-    }
-    
-
-    switch (weatherData.weather.icon) {
-        case "01d":
-        case "01n":
-        case "02d":
-        case "02n":
-        case "03d":
-        case "03n":
-        case "04d":
-        case "04n":
-        case "50d":
-        case "50n":
-            weatherConditions = "noRain";
-            break;
-        case "09d":
-        case "09n":
-        case "10d":
-        case "10n":
-        case "11d":
-        case "11n":
-        case "13d":
-        case "13n":
-            weatherConditions = "Rain";
-            break;
-        default:
-            console.log("Default rain position");
-    }
-
 
     return (
         <View style={styles.weatherContainer}>
-            <View style={styles.headerContainer}>
-            <MaterialCommunityIcons name={weatherConditions.icon1} size={100} color="black"/>
-                {/* <Text style={styles.tempText}>Temperature˚</Text> */}
+            {displayData(loading,error,data,navigation)}
+        </View>
+    );
+  
+    
+  }
+
+  function displayData(loading, error, data, navigation){
+
+    if(loading){
+        // return loading screen
+        return (
+            <View>
+                <Text>Loading...</Text>
+                <ActivityIndicator 
+                size="large"
+                color="#00ff00"
+                />
             </View>
-            <View style={styles.bodyContainer}>
-                <MaterialCommunityIcons name={weatherConditions.umbrella} size={200} color="black" />
-                <Text style={styles.yesNo}>{weatherConditions.text}</Text>
+        );
+
+    }
+    else if(error){
+        // return error msg
+        return (
+            <View>
+                <Text>ERROR...</Text>
             </View>
-            
-            <View style={styles.infoContainer}>
-                <View style={styles.Row}>
-                    <View style={[{ width: "50%", paddingTop: 15}]} >
-                        <Text style={styles.text}>18°C</Text>
-                        <Text style={styles.text}>60% rain</Text>
+        );
+
+    }
+    else{
+        // console.log();
+        const weatherConditions = getWeatherConditions(data.weather[0].icon);
+        // console.log('check');
+        // console.log(weatherConditions);
+        const backgroundColor = weatherConditions.backgroundColor;
+        const tempCelsius = Math.trunc(273.15 - data.main.temp);
+        const tempFeelsLike = Math.trunc(273.15 - data.main.feels_like);
+
+        return (
+            <View style={[{flex: 1, backgroundColor: backgroundColor}]}>
+                <View style={styles.headerContainer}>
+                    <MaterialCommunityIcons name={weatherConditions.icon} size={100} color="black"/>
+                    {/* <Text style={styles.tempText}>Temperature˚</Text> */}
+                    {/* <Text style={styles.tempText}>{data.weather[0].icon}</Text> */}
+                </View>
+                <View style={styles.bodyContainer}>
+                    <MaterialCommunityIcons name={weatherConditions.umbrella} size={200} color="black" />
+                    <Text style={styles.yesNo}>{weatherConditions.text}</Text>
+                </View>
+                
+                <View style={styles.infoContainer}>
+                    <View style={styles.Row}>
+                        <View style={[{ width: "100%", paddingTop: 15}]} >
+                            <Text style={styles.text}> {tempCelsius} °C</Text>
+                            <Text style={styles.text}>Feels like: {tempFeelsLike} °C</Text>
+                        </View>
+                
                     </View>
                     
-                    {/* <View style={[{ width: "50%", padding: 15}]}>
-                        <View style={[{ width: "100%", padding: 15}]}>
-                            <Button
-                                color="#5D3FD3"
-                                title='RAIN'
-                                onPress={()=> navigation.navigate('Umbrella')}
-                            />
-                        </View>
-                        <View style={[{ width: "100%", padding: 15}]}>
-                            <Button
-                                color="#5D3FD3"
-                                title='NO RAIN'
-                                onPress={()=> navigation.navigate('NoRain')}
-                            />
-                        </View>
-                    </View> */}
                     
                 </View>
-                
-                
-            </View>
-            <View style={styles.Row}>
-                
-                <View style={[{ width: "100%", padding: 15}]}>
-                    <Button
-                    color="#000"
-                    title='FORECAST'
-                    onPress={()=> navigation.navigate('Forecast')}
-                    />
+                <View style={styles.Row}>
+                    
+                    <View style={[{ width: "100%", padding: 15}]}>
+                        <Button
+                        color="#000"
+                        title='details'
+                        onPress={()=> navigation.navigate(
+                            'Forecast',
+                            {
+                                cityId: data.id
+                            }
+                        )}
+                        />
+                    </View>
                 </View>
+                    
             </View>
-                
-        </View>
-
-        
-        
-        
-    );
+            
+        );
+    }
   }
 
   const styles = StyleSheet.create({
     weatherContainer: {
       flex: 1,
-      backgroundColor: weatherConditions.backgroundColor
+    //   backgroundColor: {weatherConditions.backgroundColor}
     },
     headerContainer: {
-      flex: 2,
+      flex: 3,
       alignItems: 'center',
       justifyContent: 'center',
     },

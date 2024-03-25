@@ -3,45 +3,112 @@
 // Joao Resende
 // A01319312
 
-import React from 'react';
-import { StyleSheet, View, Text, Image, FlatList, Button } from 'react-native';
+import React, { useEffect, useState } from 'react';
+import { StyleSheet, View, Text, Image, FlatList, Button, ActivityIndicator } from 'react-native';
+import getWeatherConditions from '../utils/WeatherConditions';
+import * as Location from 'expo-location';
+
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 
-// Current weather data to be replaced by API data
-const DATA = [
-    {id: '001', day: 'monday', temp: '18°C', percent: '60%'}, {id: '002', day: 'tuesday', temp: '23°C', percent: '10%'}, {id: '003', day: 'wednesday', temp: '25°C', percent: '30%'}, 
-];
-
-const Item = ({ day, temp, percent }) => (
-    <View style={styles.infoContainer}>
-        <Text style={styles.text}>{day}</Text>
-        <Text style={styles.text}>{temp}</Text>
-        <Text style={styles.text}>{percent}</Text>
-    </View>
-);
-
-const renderItem = ({ item }) => (
-    <Item 
-        day={item.day} 
-        temp={item.temp}
-        percent={item.percent}  
-    />
-);
+import { fetchWeatherData } from "../api/weather";
 
 // Flatlist used here
-export default function Forecast({ navigation }) {
+export default function Forecast({ navigation, route }) {
+    const {cityId} = route.params;
+    // console.log('id:' + cityId);
+
+    const [error, setError] = useState(null);
+    const [data, setData] = useState(null);
+    const [loading, setLoading] = useState(true);
+
+    const [location, setLocation] = useState(null);
+
+    useEffect(() => {
+        const apiKey = "00703541609ed86c9d76331553ebdb40";
+        const fetchUri = `https://api.openweathermap.org/data/2.5/weather?id=${cityId}&appid=${apiKey}`;
+
+        fetch(fetchUri)
+            .then(
+                res => res.json() 
+            )
+            .then(
+                (res) => {
+                    // console.log("success");
+                    // console.log(res);
+                    setData(res);
+                    setLoading(false);
+                },
+
+                (err) => {
+                    // console.log("error");
+                    setError(err);
+                    setLoading(false);
+                }
+            )
+    }, []);
 
     return (
         <View style={styles.weatherContainer}>
+            {displayData(loading,error,data,navigation)}
+        </View>
+    );
+  
+    
+  }
+
+  function displayData(loading, error, data, navigation){
+
+    if(loading){
+        // return loading screen
+        return (
+            <View>
+                <Text>Loading...</Text>
+                <ActivityIndicator 
+                size="large"
+                color="#00ff00"
+                />
+            </View>
+
+        );
+
+    }
+    else if(error){
+        // return error msg
+        return (
+            <View>
+                <Text>ERROR...</Text>
+            </View>
+        );
+
+    }
+    else{
+        // console.log();
+        const weatherConditions = getWeatherConditions(data.weather[0].icon);
+        // console.log('check');
+        // console.log(weatherConditions);
+        // const backgroundColor = weatherConditions.backgroundColor;
+        const tempCelsius = Math.trunc(273.15 - data.main.temp);
+        const tempFeelsLike = Math.trunc(273.15 - data.main.feels_like);
+        const tempMin = Math.trunc(273.15 - data.main.temp_min);
+        const tempMax = Math.trunc(273.15 - data.main.temp_max);
+        const windSpeed = Math.round(data.wind.speed*3.6);
+
+        console.log(data);
+
+        return (
+            <View style={styles.weatherContainer}>
             <View style={styles.headerContainer}>
-                <Text style={styles.yesNo}>forecast</Text>
+                <Text style={styles.yesNo}>details</Text>
             </View>
             <View style={styles.bodyContainer}>
-                <FlatList
-                    data={DATA}
-                    renderItem={renderItem}
-                    keyExtractor={item => item.id}
-                /> 
+                <Text style={styles.text}>{tempCelsius} °C</Text>
+                <Text style={styles.text}>Feels like: {tempFeelsLike} °C</Text>
+                <Text style={styles.text}>Max: {tempMax} °C</Text>
+                <Text style={styles.text}>Min: {tempMin} °C</Text>
+                <Text style={styles.text}>Humidity: {data.main.humidity}%</Text>
+                <Text style={styles.text}>Wind: {windSpeed} km/h</Text>
+                <Text style={styles.text}>Clouds: {data.clouds.all}%</Text>
+                
             </View>
             
             <View style={styles.buttonRow}>
@@ -49,16 +116,16 @@ export default function Forecast({ navigation }) {
                 <View style={[{ width: "100%", padding: 15}]}>
                     <Button
                     color="#000"
-                    title='TODAY'
-                    onPress={()=> navigation.navigate('Umbrella')}
+                    title='umbrella?'
+                    onPress={()=> navigation.navigate('Home')}
                     />
                 </View>
             </View>
                 
         </View>
-        
-        
-    );
+            
+        );
+    }
   }
 
   const styles = StyleSheet.create({
